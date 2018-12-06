@@ -50,7 +50,6 @@ Running your app using IPFS will mimic the production environment that will be u
 - [**@aragon/ui**](https://github.com/aragon/aragon-ui): Aragon UI components (in React)
 
 #### Publish
-
 This app has 3 environments defined in `arapp.json`:
 
 | Environment | Network |
@@ -62,13 +61,9 @@ This app has 3 environments defined in `arapp.json`:
 Prerequisites:
 - ENS Registry address
 
-Command:
+Note: the `default` environment which points to `localhost` does not have an ENS Registry address specified, that's because the `@aragon/cli` will use the default value of `0xB9462EF3441346dBc6E49236Edbb0dF207db09B7`.
 
-```
-aragon apm publish minor --environment staging --files build
-```
-
-This will _build_ the app, _compile_ the contracts and publish the app to the **staging** environment.
+##### Staging environment
 This environment defined in `arapp.json` points to:
 - an ENS registry (`0x314159265dd8dbb310642f98f50c066173c1259b`)
 - an APM registry (`open.aragonpm.eth`)
@@ -80,12 +75,50 @@ the `rinkeby` network is further defined in `truffle.js`, and has:
 - an Ethereum Account (`0xb4124cEB3451635DAcedd11767f004d8a28c6eE7`)
     (which is the first account generated from the `DEFAULT_MNEMONIC` variable)
 
+##### Content & contract
+Command:
+```
+aragon apm publish major CounterApp --environment staging
+```
+
+This will:
+1. _build_ the app's frontend (which lives in `dist`)
+2. _compile_ the app's contracts (which live in `build`)
+3. publish the app to the **staging** environment.
+
 Sample output:
 ```
-% aragon apm publish minor --environment staging --files build
+ ✔ Check IPFS
+ ✔ Applying version bump (major)
+ ✔ Deploy contract
+ ✔ Determine contract address for version
+ ✔ Building frontend
+ ✔ Prepare files for publishing
+ ✔ Generate application artifact
+ ✔ Publish pomodoro-counter.aragonpm.eth
+ ✔ Fetch published repo
+
+ ✔ Successfully published pomodoro-counter.aragonpm.eth v4.0.0: 
+ ℹ Contract address: 0xC56a94cB177B297A9f4fe11781CE4E2eD1829f8B
+ ℹ Content (ipfs): QmetwPT5CSuzAgTdqwwr5NTBm2R53YMNHp4p6PUbWxrVwg
+ ℹ Transaction hash: 0x6ad17abdac51aca2f37679c43ce4fcbc68dc65515ea1eea587c9ca8f5bf293b8
+```
+
+
+##### Content/frontend only
+Command:
+```
+aragon apm publish minor --only-content --environment staging
+```
+
+This will:
+1. _build_ the app's frontend (which lives in `dist`)
+2. publish the app to the **staging** environment.
+
+Sample output:
+```
  ✔ Check IPFS
  ✔ Applying version bump (minor)
- ✔ Deploy contract
  ✔ Determine contract address for version
  ✔ Building frontend
  ✔ Prepare files for publishing
@@ -93,13 +126,12 @@ Sample output:
  ✔ Publish pomodoro-counter.open.aragonpm.eth
  ✔ Fetch published repo
 
- ✔ Successfully published pomodoro-counter.open.aragonpm.eth v0.1.0: 
- ℹ Contract address: 0x12137D5da5529E26235f421Be5D79807CB6C5cae
- ℹ Content (ipfs): QmWsFFWCk5rz9iXdE3AYVhmRe81k3XWBcxTMdG7Vukogxd
- ℹ Transaction hash: 0xb12fe902444c0d1cc5dafe254cfb5d2b27679743d0b08521b8fb951237278e07
- ❯ Published directory: /tmp/tmp-20363JM9HuSim3hWH
+ ✔ Successfully published pomodoro-counter.open.aragonpm.eth v2.1.0: 
+ ℹ Content (ipfs): QmQCPnPrVFQzKRYHYffa28HGM3ge5ztGp2qCp4ELiF3pBa
+ ℹ Transaction hash: 0x8092746febb63ed888fca33c8319f237c5bf4fe6fa18381e7407e5dddef97f68
 ```
 
+##### Help
 To deploy from a different account, you can:
 - define a `~/.aragon/mnemonic.json` file
     ```
@@ -118,10 +150,60 @@ To deploy from a different account, you can:
     }
     ```
 
-
-You might encounter the following error:
+You might encounter the following errors:
 1. `No "from" address specified in neither the given options, nor the default options.`
-    That is because the network you are trying to deploy does not have an Ethereum account provider
+    That is because the network you are trying to deploy does not have an Ethereum account provider.
 
-TODO:
-- add the app to a dao
+2. `Transaction would not succeed ("gas required exceeds allowance or always failing transaction")`
+    when running `aragon apm publish minor CounterApp --environment staging`.
+    Solution: deploy a `major` version. ¯\_(ツ)_/¯
+
+3. `Transaction would not succeed ("Returned error: VM Exception while processing transaction: revert REPO_INVALID_VERSION")`
+    when running `aragon apm publish minor CounterApp`.
+    Solution: deploy a `major` version. ¯\_(ツ)_/¯
+
+4. `→ ENOENT: no such file or directory, open '.../pomodoro-counter/build/contracts/CounterApp.json'`
+    when running `aragon apm publish patch`.
+    Is it expected to have the contracts compiled and the current version's contract to be redeployed.
+    
+
+#### Install the app in a DAO
+To install this app on a rinkeby dao, e.g: `daniel.aragonid.eth`, which lives at `0xf9e4c6ee977b1fe7d296fbe3b75ba05f12a30e4e`
+
+```
+aragon dao install 0xF9e4c6ee977b1Fe7D296FbE3b75BA05f12A30E4e pomodoro-counter.open.aragonpm.eth --environment staging
+```
+
+You might encounter the following errors:
+1. `Transaction has been reverted by the EVM:`
+    This is because you do not have direct permissions.
+
+2. `→ Cannot find artifacts in APM repo. Please make sure the package is published and IPFS or your HTTP server running.`
+    This could be because there is no IPFS peer that has your app's content (frontend/artifact)
+    You can check by going to `https://ipfs.io/ipfs/${hash}` and see if you can fetch it.
+    You can fix it by doing `ipfs add` (??)
+
+3. Stuck at `Inspecting DAO`
+    This could be because `aragon.js` needs a websocket connection to ethereum to query data, and truffle providers being on `web3 0.x`, not supporting web sockets, the following workaround is needed:
+    ```diff
+    {
+      "registry": "0x98df287b6c145399aaa709692c8d308357bc085d",
+      "appName": "pomodoro-counter.open.aragonpm.eth",
+    + "wsRPC": "wss://rinkeby.eth.aragon.network/ws",
+      "network": "rinkeby"
+    } 
+    ```
+    Note: this will work in the next version of the cli, when [pull/270](https://github.com/aragon/aragon-cli/pull/270) is merged!
+
+
+Other issues:
+1. `dao apps daniel.aragonid.eth --environment staging`
+3. `dao apps 0xF9e4c6ee977b1Fe7D296FbE3b75BA05f12A30E4e --environment staging`
+2. `dao acl daniel.aragonid.eth --environment staging`
+   Gets stuck at _Inspecting DAO_
+
+3. `dao apps 0xE9866fE6dF20F032E62Cc3094EdDe9748fE51753` <- generated dao from `aragon run`
+```
+Error: The EthJsENS Constructor requires a network or registry address.
+    at new Ens (/home/daniel/repos/aragon/aragon-cli/node_modules/ethjs-ens/index.js:31:13)
+```
