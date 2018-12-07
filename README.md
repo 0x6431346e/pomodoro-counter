@@ -168,12 +168,57 @@ You might encounter the following errors:
     
 
 #### Install the app in a DAO
-To install this app on a rinkeby dao, e.g: `daniel.aragonid.eth`, which lives at `0xf9e4c6ee977b1fe7d296fbe3b75ba05f12a30e4e`
+To install this app on a rinkeby dao, e.g: `daniel.aragonid.eth`, which lives at `0xf9e4c6ee977b1fe7d296fbe3b75ba05f12a30e4e`,
 
+Run:
 ```
-aragon dao install 0xF9e4c6ee977b1Fe7D296FbE3b75BA05f12A30E4e pomodoro-counter.open.aragonpm.eth --environment staging
+dao install daniel pomodoro-counter.open.aragonpm.eth --environment staging
 ```
 
+Sample output:
+```
+ ✔ Fetching pomodoro-counter.open.aragonpm.eth@latest
+ ↓ Checking installed version [skipped]
+   → Installing the first instance of pomodoro-counter.open.aragonpm.eth in DAO
+ ✔ Deploying app instance
+ ↓ Fetching deployed app [skipped]
+   → App wasn't deployed in transaction.
+ ℹ Successfully executed: "Execute desired action as a token holder"
+ ⚠ After the app instance is created, you will need to assign permissions to it for it appear as an app in the DAO
+```
+^- this is because the you do not have direct permissions to add apps.
+
+Now you can go to the app and vote, it should look like this: `Kernel: No description`.
+If you vote yes, the app will be installed in the DAO.
+For the app to appear in the DAO you need to install permissions:
+1. Check the `NewAppProxy` event from the kernel:  https://rinkeby.etherscan.io/address/0xF9e4c6ee977b1Fe7D296FbE3b75BA05f12A30E4e#events
+and extract the app address: `c82ad38789097e2b151840eb3dc9875f9eedd695`
+2. Create the permissions
+```
+dao acl create daniel c82ad38789097e2b151840eb3dc9875f9eedd695 INCREMENT_ROLE 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7 --environment staging
+```
+Output:
+```
+ ✔ Generating transaction
+ ✔ Sending transaction
+ ✔ Successfully executed: "Execute desired action as a token holder"
+```
+
+*Now a new vote will be created, and once it passes the app should appear in the menu.*
+
+Solution B: grant on the `Kernel` app, the `Manage apps` permission to the account you are trying to publish with (`0xb4124cEB3451635DAcedd11767f004d8a28c6eE7`)
+TODO
+
+##### Upgrade
+```
+dao upgrade daniel pomodoro-counter.open.aragonpm.eth --environment staging
+```
+
+##### Remove
+
+TODO
+
+##### Help
 You might encounter the following errors:
 1. `Transaction has been reverted by the EVM:`
     This is because you do not have direct permissions.
@@ -181,7 +226,7 @@ You might encounter the following errors:
 2. `→ Cannot find artifacts in APM repo. Please make sure the package is published and IPFS or your HTTP server running.`
     This could be because there is no IPFS peer that has your app's content (frontend/artifact)
     You can check by going to `https://ipfs.io/ipfs/${hash}` and see if you can fetch it.
-    You can fix it by doing `ipfs add` (??)
+    Easiet fix is to re-deploy.
 
 3. Stuck at `Inspecting DAO`
     This could be because `aragon.js` needs a websocket connection to ethereum to query data, and truffle providers being on `web3 0.x`, not supporting web sockets, the following workaround is needed:
@@ -194,16 +239,3 @@ You might encounter the following errors:
     } 
     ```
     Note: this will work in the next version of the cli, when [pull/270](https://github.com/aragon/aragon-cli/pull/270) is merged!
-
-
-Other issues:
-1. `dao apps daniel.aragonid.eth --environment staging`
-3. `dao apps 0xF9e4c6ee977b1Fe7D296FbE3b75BA05f12A30E4e --environment staging`
-2. `dao acl daniel.aragonid.eth --environment staging`
-   Gets stuck at _Inspecting DAO_
-
-3. `dao apps 0xE9866fE6dF20F032E62Cc3094EdDe9748fE51753` <- generated dao from `aragon run`
-```
-Error: The EthJsENS Constructor requires a network or registry address.
-    at new Ens (/home/daniel/repos/aragon/aragon-cli/node_modules/ethjs-ens/index.js:31:13)
-```
