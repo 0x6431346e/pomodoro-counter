@@ -11,7 +11,6 @@
     "styled-components": "^3.4.9"
   },
   "devDependencies": {
-    "@aragon/cli": "^5.0.0",
     "@babel/core": "^7.1.2",
     "@babel/plugin-proposal-class-properties": "^7.1.0",
     "@babel/polyfill": "^7.0.0",
@@ -30,7 +29,8 @@
     "build:app": "parcel build app/index.html -d dist/ --public-url '.' --no-cache",
     "build:script": "parcel build app/script.js -d dist/ --no-cache",
     "build": "npm run sync-assets && npm run build:app && npm run build:script",
-    "publish": "aragon apm publish"
+    "publish": "aragon apm publish",
+    "clean": "rm -rf ./build ./dist ./node_modules"
   },
   "keywords": []
 }

@@ -20,9 +20,10 @@ export default class App extends React.Component {
     return (
       <AppContainer>
         <div>
+          <Text.Block style={{ textAlign: 'center' }} size='xxlarge'>Pomodoro count:</Text.Block>
           <ObservedCount observable={this.props.observable} />
           <Button onClick={() => this.props.app.decrement(1)}>Decrement</Button>
-          <Button onClick={() => this.props.app.increment(1)}>Increment</Button>
+          <Button onClick={() => this.props.app.increment(1)} mode="strong">Increment</Button>
         </div>
       </AppContainer>
     )
